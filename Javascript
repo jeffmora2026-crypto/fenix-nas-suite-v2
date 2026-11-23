@@ -1,0 +1,31 @@
+// Fenix NAS Forensic - Cliente de Notificaciones y Relay HTTP
+function addNotif(kind, title, detailObj) {
+  const list = document.getElementById("notifList");
+  const item = document.createElement("div");
+  item.className = `notif-item ${kind}`;
+  const now = new Date().toLocaleTimeString();
+  item.innerHTML = `
+    <div class="meta">[${now}] · ${title}</div>
+    <pre>${typeof detailObj === "string" ? detailObj : JSON.stringify(detailObj, null, 2)}</pre>
+  `;
+  list.prepend(item);
+}
+
+async function sendCmd(action, target) {
+  const url = document.getElementById("relayUrl").value.trim();
+  const payload = { action, target };
+  addNotif("run", `EJECUTANDO → ${action}`, payload);
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    const isOk = res.ok && data.status === "ok";
+    addNotif(isOk ? "ok" : "err", isOk ? `RESULTADO OK ← ${action}` : `ERROR ← ${action}`, data);
+  } catch (err) {
+    addNotif("err", `FALLO DE CONEXIÓN ← ${action}`, String(err));
+  }
+}
